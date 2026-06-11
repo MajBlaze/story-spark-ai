@@ -6,33 +6,27 @@ import { compressContext, serializeLore } from "../utils/contextCompressor";
 
 const sanitizeJsonText = (rawText: string): string => {
   const trimmed = rawText.trim();
-  if (!trimmed.startsWith("```")) {
-    return trimmed;
-  }
+  if (!trimmed.startsWith("```")) return trimmed;
   return trimmed
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
 };
 
-const parseRawStoryText = (text: string) => {
-  return {
-    storySegment: text || "The story continues into the unknown...",
-    choices: [
-      "Explore the surroundings",
-      "Search for another way",
-      "Wait and see what happens",
-    ],
-  };
-};
+const parseRawStoryText = (text: string) => ({
+  storySegment: text || "The story continues into the unknown...",
+  choices: [
+    "Explore the surroundings",
+    "Search for another way",
+    "Wait and see what happens",
+  ],
+});
 
 const buildCompressedContext = (storyContext: string): string => {
   if (!storyContext.trim()) return "";
-
   const rawNodes = storyContext
     .split(/(?=\[Player chose:)/g)
     .map((chunk, i) => ({ id: `seg-${i}`, text: chunk.trim() }));
-
   const { lore, window: contextWindow } = compressContext(rawNodes);
   return `${serializeLore(lore)}\n\n${contextWindow.map((n) => n.text).join("\n")}`;
 };
@@ -76,16 +70,11 @@ Task:
       try {
         const cleaned = sanitizeJsonText(result.story);
         parsed = JSON.parse(cleaned);
-
         if (!parsed.storySegment || !Array.isArray(parsed.choices)) {
           throw new Error("Missing required fields in parsed JSON");
         }
       } catch (e) {
-        console.warn(
-          "[Branching] JSON parsing failed, attempting fallback parsing. Error:",
-          e
-        );
-
+        console.warn("[Branching] JSON parsing failed, attempting fallback. Error:", e);
         const jsonMatch = result.story.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           try {
@@ -93,7 +82,7 @@ Task:
             if (!parsed.storySegment || !Array.isArray(parsed.choices)) {
               throw new Error("Invalid structure inside regex match");
             }
-          } catch (innerError) {
+          } catch {
             parsed = parseRawStoryText(result.story);
           }
         } else {
@@ -119,21 +108,15 @@ Task:
         success: true,
         statusCode: 200,
         message: "Story generated successfully",
-        data: {
-          storySegment: parsed.storySegment,
-          choices: parsed.choices,
-          segmentIndex,
-        },
+        data: { storySegment: parsed.storySegment, choices: parsed.choices, segmentIndex },
       });
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       console.error("[StoryBranching] generation error:", detail);
-
       sendResponse(res, {
         success: false,
         statusCode: 503,
-        message:
-          "Story generation is temporarily unavailable. Please try again later.",
+        message: "Story generation is temporarily unavailable. Please try again later.",
         data: null,
       });
     }
