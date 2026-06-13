@@ -32,7 +32,7 @@ type Inputs = {
   prompt: string;
 };
 
-const MAX_PROMPT_LENGTH = 2000;
+const MAX_PROMPT_LENGTH = 500;
 const WARN_THRESHOLD = 0.85;
 
 const LANGUAGES = [
@@ -944,8 +944,16 @@ useEffect(() => {
   ]);
 
   const isOverLimit = textareaValue.length >= MAX_PROMPT_LENGTH;
-  const isNearLimit = textareaValue.length >= MAX_PROMPT_LENGTH * WARN_THRESHOLD;
+  const percentage = (textareaValue.length / MAX_PROMPT_LENGTH) * 100;
+  const isNearLimit = percentage >= 80 && percentage < 95;
+  const isDangerLimit = percentage >= 95;
   const isGenerateDisabled = loading || isOverLimit || !textareaValue.trim();
+
+  const counterColor = isDangerLimit
+    ? "text-red-500 dark:text-red-500"
+    : isNearLimit
+    ? "text-yellow-500"
+    : "text-slate-400";
 
   const handleOpenHelp = useCallback(() => setShowHelpModal(true), []);
   const handleCloseHelp = useCallback(() => setShowHelpModal(false), []);
@@ -1330,16 +1338,16 @@ useEffect(() => {
                           <p className="text-[11px] font-semibold text-red-500 dark:text-red-400 flex items-center gap-1 truncate m-0">
                             <span>⚠</span> {text.characterLimit}
                           </p>
-                        ) : isNearLimit ? (
-                          <p className="text-[11px] font-semibold text-amber-500 dark:text-amber-400 flex items-center gap-1 truncate m-0">
+                        ) : isDangerLimit || isNearLimit ? (
+                          <p className={`text-[11px] font-semibold flex items-center gap-1 truncate m-0 ${
+                            isDangerLimit ? "text-red-500 dark:text-red-400" : "text-amber-500 dark:text-amber-400"
+                          }`}>
                             <span>⚠</span> {MAX_PROMPT_LENGTH - textareaValue.length} {text.charactersRemaining}
                           </p>
                         ) : null}
                       </div>
 
-                      <span className={`text-[11px] font-bold tabular-nums shrink-0 ml-auto ${
-                        isOverLimit ? "text-red-500 dark:text-red-400" : isNearLimit ? "text-amber-500" : "text-slate-400"
-                      }`}>
+                      <span className={`text-[11px] font-bold tabular-nums shrink-0 ml-auto ${counterColor}`}>
                         {textareaValue.length} / {MAX_PROMPT_LENGTH}
                       </span>
                     </div>
@@ -1388,11 +1396,11 @@ useEffect(() => {
                     <div className="flex items-center justify-between mt-1 px-1">
                       {isOverLimit ? (
                         <p className="text-xs text-red-400 flex items-center gap-1">
-                          <span>âš </span> {text.characterLimit}
+                          <span>⚠</span> {text.characterLimit}
                         </p>
-                      ) : isNearLimit ? (
-                        <p className="text-xs text-yellow-400 flex items-center gap-1">
-                          <span>âš </span>{" "}
+                      ) : isDangerLimit || isNearLimit ? (
+                        <p className={`text-xs flex items-center gap-1 ${isDangerLimit ? "text-red-400" : "text-yellow-400"}`}>
+                          <span>⚠</span>{" "}
                           {MAX_PROMPT_LENGTH - textareaValue.length} {text.charactersRemaining}
                         </p>
                       ) : (
@@ -1406,20 +1414,22 @@ useEffect(() => {
                   </div>
 
                       <span
-  className={`text-xs tabular-nums ml-auto flex gap-2 ${
-    isOverLimit
-      ? "text-red-400 font-medium"
-      : isNearLimit
-      ? "text-yellow-400"
-      : "text-gray-500"
-  }`}
->
-  <span>
-    {textareaValue.trim() === "" ? 0 : textareaValue.trim().split(/\s+/).length} words
-  </span>
-  <span className="opacity-40">·</span>
-  <span>{textareaValue.length} / {MAX_PROMPT_LENGTH} chars</span>
-</span>
+                        className={`text-xs tabular-nums ml-auto flex gap-2 ${
+                          isOverLimit
+                            ? "text-red-400 font-medium"
+                            : isDangerLimit
+                            ? "text-red-400"
+                            : isNearLimit
+                            ? "text-yellow-400"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        <span>
+                          {textareaValue.trim() === "" ? 0 : textareaValue.trim().split(/\s+/).length} words
+                        </span>
+                        <span className="opacity-40">·</span>
+                        <span>{textareaValue.length} / {MAX_PROMPT_LENGTH} chars</span>
+                      </span>
                     </div>
                   ) : (
                     <div className="space-y-4">
