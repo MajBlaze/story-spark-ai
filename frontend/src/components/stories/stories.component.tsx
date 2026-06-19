@@ -457,6 +457,8 @@ const buildSentenceSegments = (content: string): StorySentenceSegment[] => {
 
     wordCursor += wordsInSentence;
   });
+
+  return segments;
 };
 
 interface ICharacter {
@@ -465,9 +467,6 @@ interface ICharacter {
   role: string;
   personality: string;
 }
-
-  return segments;
-};
 
 const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   stories,
@@ -888,6 +887,7 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   };
   const handleAddTopic = () => {
     const title = newTopicTitle.trim();
+  };
 
   const [generateModel] = useGenerateModelMutation();
   const [generateFreeModel] = useGenerateFreeModelMutation();
